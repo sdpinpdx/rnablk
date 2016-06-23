@@ -1,0 +1,38 @@
+#ident "$URL$ $Id$"
+
+obj-m := fldc.o
+
+EXTRA_CFLAGS := -Wno-unused -DOFED_1_2_5 -I$(src)/../com
+ifneq "$(rna_debug)" "0"
+EXTRA_CFLAGS += -DVERBOSE_LOGS
+EXTRA_CFLAGS += -DRNA_USE_IOS_TIMERS -DRNA_DEBUG
+endif
+
+EXTRA_CFLAGS += -I$(BLKSRC)/../../common
+
+# uncomment to turn off inline functions, handy for reading dump stacks
+# EXTRA_CFLAGS += -fno-inline
+EXTRA_CFLAGS += -Werror
+
+# Netlink currently causes a kernel panic during reboot, 
+# do not enable on production builds (see MVP-4915).
+ifneq "$(rna_debug)" "0"
+EXTRA_CFLAGS += -DRNABLK_ENABLE_NETLINK
+endif
+
+ifeq "$(DISABLE_IB)" "TRUE"
+# See HRM-171.
+# rb.h currently sets the maximum IO size based on whether RDMA is enabled
+EXTRA_CFLAGS += -D_DISABLE_IB_
+endif
+
+KBUILD_EXTRA_SYMBOLS := $(src)/../com/Module.symvers
+KBUILD_EXTRA_SYMBOLS += $(src)/../rna_service/Module.symvers
+KBUILD_EXTRA_SYMBOLS += $(src)/../md5/Module.symvers
+
+fldc-y := tree.o cfs.o rna_log.o rnablk_block_state.o rnablk_cache.o \
+    rnablk_callbacks.o rnablk_comatose.o rnablk_data_transfer.o rnablk_device.o \
+    rnablk_globals.o rnablk_io_state.o rnablk_protocol.o rnablk_queue_dispatch.o \
+    rnablk_scsi.o rnablk_system_linux.o rnablk_util.o
+ccflags-y += -I$(src)/../com
+ccflags-y += -I$(src)/../common
